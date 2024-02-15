@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 name: media-server
 
 services:
@@ -102,6 +102,8 @@ services:
       - ${ROOT}/complete/tv:/tv
       - ${ROOT}/downloads/:/data/torrents
     restart: unless-stopped
+    depends_on:
+      - transmission
 
   radarr:
     container_name: radarr
@@ -118,6 +120,8 @@ services:
       - ${ROOT}/complete/movies:/movies
       - ${ROOT}/downloads:/data/torrents
     restart: unless-stopped
+    depends_on:
+      - transmission
 
   bazarr:
     container_name: bazarr
@@ -133,6 +137,8 @@ services:
       - ${ROOT}/config/bazarr:/config
       - ${ROOT}/complete/movies:/movies
       - ${ROOT}/complete/tv:/tv
+    depends_on:
+      - transmission
 
   # flexget-docker:
   #   image: wiserain/flexget
