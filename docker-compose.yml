@@ -36,6 +36,12 @@ services:
       - TRANSMISSION_WATCH_DIR=/data/watch
       - TRANSMISSION_INCOMPLETE_DIR=/data/incomplete
       - TRANSMISSION_TRASH_ORIGINAL_TORRENT_FILES=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/transmission:/config
@@ -103,7 +109,9 @@ services:
       - ${ROOT}/downloads/:/data/torrents
     restart: unless-stopped
     depends_on:
-      - transmission
+      transmission:
+        condition: service_healthy
+        restart: true
 
   radarr:
     container_name: radarr
@@ -121,8 +129,9 @@ services:
       - ${ROOT}/downloads:/data/torrents
     restart: unless-stopped
     depends_on:
-      - transmission
-
+      transmission:
+        condition: service_healthy
+        restart: true
   bazarr:
     container_name: bazarr
     image: linuxserver/bazarr
@@ -138,8 +147,9 @@ services:
       - ${ROOT}/complete/movies:/movies
       - ${ROOT}/complete/tv:/tv
     depends_on:
-      - transmission
-
+      transmission:
+        condition: service_healthy
+        restart: true
   # flexget-docker:
   #   image: wiserain/flexget
   #   restart: always
