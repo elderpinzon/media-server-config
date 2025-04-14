@@ -152,13 +152,13 @@ services:
         condition: service_healthy
         restart: true
 
-    expenseowl:
-      image: tanq16/expenseowl:main
-      restart: unless-stopped
-      ports:
-        - 5006:8080
-      volumes:
-        - ${ROOT}/expenseowl:/app/data
-      environment:
-        - CURRENCY=cad
-        - EXPENSE_CATEGORIES=Food,Groceries,Entertainment,Transportation,Healthcare,Shopping,Gifts,Miscellaneous
+  expenseowl:
+    image: tanq16/expenseowl:main
+    restart: unless-stopped
+    ports:
+      - 5006:8080
+    volumes:
+      - ${ROOT}/expenseowl:/app/data
+    environment:
+      - CURRENCY=cad
+      - EXPENSE_CATEGORIES=Food,Groceries,Entertainment,Transportation,Healthcare,Shopping,Gifts,Miscellaneous
