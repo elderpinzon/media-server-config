@@ -162,3 +162,56 @@ services:
     environment:
       - CURRENCY=cad
       - EXPENSE_CATEGORIES=Food,Groceries,Entertainment,Transportation,Healthcare,Shopping,Gifts,Miscellaneous
+
+  plextraktsync:
+    image: ghcr.io/taxel/plextraktsync
+    command: sync
+    container_name: plextraktsync
+    restart: on-failure:2
+    volumes:
+      - ${ROOT}/config/plextraktsync:/app/config
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    ports:
+      - 8096:8096           # Jellyfin web (HTTP)
+      - 8920:8920           # Jellyfin web (HTTPS) - optional, needs certs
+      - 7359:7359/udp       # Client discovery
+      - 1900:1900/udp       # DLNA/UPnP discovery
+    volumes:
+      - ${ROOT}/config/jellyfin:/config
+      - ${ROOT}/config/jelyyfin/cache:/cache          # transcodes / thumbnails
+      - ${ROOT}/complete/movies:/movies:ro
+      - ${ROOT}/complete/tv:/tv:ro
+      - ${ROOT}/complete/photos:/photos:ro
+
+  homer:
+    image: b4bz/homer:latest
+    container_name: homer
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - INIT_ASSETS=1
+    ports:
+      - 80:8080
+    volumes:
+      # Homer reads config and assets from /www/assets
+      - ${ROOT}/config/homer:/www/assets
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
