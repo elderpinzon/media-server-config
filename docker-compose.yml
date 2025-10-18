@@ -1,5 +1,9 @@
 name: media-server
 
+networks:
+  media-net:
+    driver: bridge
+
 services:
 
   transmission:
@@ -13,9 +17,6 @@ services:
     ports:
       - 9091:9091
       - 8889:8888
-      - 8989:8989 #radaar
-      - 7878:7878 #sonaar
-      - 6767:6767 #bazaar
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -36,10 +37,11 @@ services:
       - TRANSMISSION_WATCH_DIR=/data/watch
       - TRANSMISSION_INCOMPLETE_DIR=/data/incomplete
       - TRANSMISSION_TRASH_ORIGINAL_TORRENT_FILES=true
+      - TZ=${TZ}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091"]
       interval: 30s
-      timeout: 30s
+      timeout: 10s
       retries: 5
       start_period: 30s
     volumes:
@@ -48,6 +50,8 @@ services:
       - ${ROOT}/downloads:/data/torrents
       - ${ROOT}/incomplete:/data/incomplete
       - ${ROOT}/downloads/torrent-blackhole:/data/watch
+    networks:
+      - media-net
 
   plex:
     image: lscr.io/linuxserver/plex:latest
@@ -65,6 +69,8 @@ services:
     restart: unless-stopped
     ports:
       - 32400:32400
+    networks:
+      - media-net
 
   tautulli:
     image: ghcr.io/linuxserver/tautulli
@@ -78,6 +84,8 @@ services:
     ports:
       - 8181:8181
     restart: unless-stopped
+    networks:
+      - media-net
 
   jackket:
     container_name: jackett
@@ -93,11 +101,12 @@ services:
       - ${ROOT}/config/jackett:/config
     ports:
       - 9117:9117
+    networks:
+      - media-net
   
   sonarr:
     container_name: sonarr
     image: linuxserver/sonarr:latest
-    network_mode: "service:transmission"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -113,11 +122,18 @@ services:
       transmission:
         condition: service_healthy
         restart: true
+    networks:
+      - media-net
+    ports: ["8989:8989"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8989"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   radarr:
     container_name: radarr
     image: linuxserver/radarr:latest
-    network_mode: "service:transmission"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -133,11 +149,20 @@ services:
       transmission:
         condition: service_healthy
         restart: true
+    networks:
+      - media-net
+    ports: ["7878:7878"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7878"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
   bazarr:
     container_name: bazarr
     image: linuxserver/bazarr
     restart: unless-stopped
-    network_mode: "service:transmission"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -151,9 +176,18 @@ services:
       transmission:
         condition: service_healthy
         restart: true
+    networks:
+      - media-net
+    ports: ["6767:6767"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:6767"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   expenseowl:
     image: tanq16/expenseowl:main
+    container_name: expenseowl
     restart: unless-stopped
     ports:
       - 5006:8080
@@ -162,6 +196,9 @@ services:
     environment:
       - CURRENCY=cad
       - EXPENSE_CATEGORIES=Food,Groceries,Entertainment,Transportation,Healthcare,Shopping,Gifts,Miscellaneous
+      - TZ=${TZ}
+    networks:
+      - media-net
 
   plextraktsync:
     image: ghcr.io/taxel/plextraktsync
@@ -190,7 +227,6 @@ services:
       - 1900:1900/udp       # DLNA/UPnP discovery
     volumes:
       - ${ROOT}/config/jellyfin:/config
-      - ${ROOT}/config/jelyyfin/cache:/cache          # transcodes / thumbnails
       - ${ROOT}/complete/movies:/movies:ro
       - ${ROOT}/complete/tv:/tv:ro
       - ${ROOT}/complete/photos:/photos:ro
